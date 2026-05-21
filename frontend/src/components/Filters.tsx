@@ -1,0 +1,74 @@
+import React from 'react'
+import { Search, Filter } from 'lucide-react'
+
+interface FiltersProps {
+  filters: {
+    search: string
+    os: string
+    location: string
+    minRssi: number
+    maxRssi: number
+  }
+  setFilters: (f: any) => void
+  osOptions: string[]
+}
+
+function Filters({ filters, setFilters, osOptions }: FiltersProps) {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setFilters((prev: any) => ({ ...prev, search: e.target.value }))
+  const handleOsChange = (e: React.ChangeEvent<HTMLSelectElement>) => setFilters((prev: any) => ({ ...prev, os: e.target.value }))
+  const handleLocationChange = (location: string) => setFilters((prev: any) => ({ ...prev, location: prev.location === location ? '' : location }))
+  const handleRssiChange = (type: 'minRssi' | 'maxRssi', value: number) => setFilters((prev: any) => ({ ...prev, [type]: value }))
+  const handleReset = () => setFilters({ search: '', os: '', location: '', minRssi: -100, maxRssi: -30 })
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex items-center mb-4">
+        <Filter className="w-5 h-5 text-primary-600 mr-2" />
+        <h3 className="font-semibold text-gray-900">Filters</h3>
+        <button onClick={handleReset} className="ml-auto text-sm text-primary-600 hover:text-primary-700 font-medium">Reset</button>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Search MAC Address</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" value={filters.search} onChange={handleSearchChange} placeholder="e.g., AA:BB:CC:DD:EE:FF" className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Operating System</label>
+          <select value={filters.os} onChange={handleOsChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+            <option value="">All OS</option>
+            {osOptions.map(os => <option key={os} value={os}>{os}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+          <div className="flex space-x-2">
+            <button onClick={() => handleLocationChange('inside')} className={filters.location === 'inside' ? 'flex-1 px-4 py-2 rounded-lg font-medium transition-colors bg-blue-500 text-white' : 'flex-1 px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200'}>Inside</button>
+            <button onClick={() => handleLocationChange('outside')} className={filters.location === 'outside' ? 'flex-1 px-4 py-2 rounded-lg font-medium transition-colors bg-orange-500 text-white' : 'flex-1 px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200'}>Outside</button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Signal Strength (RSSI)</label>
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs text-gray-600">Min: {filters.minRssi} dBm</label>
+              <input type="range" min={-100} max={0} value={filters.minRssi} onChange={(e) => handleRssiChange('minRssi', Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-600">Max: {filters.maxRssi} dBm</label>
+              <input type="range" min={-100} max={0} value={filters.maxRssi} onChange={(e) => handleRssiChange('maxRssi', Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Filters

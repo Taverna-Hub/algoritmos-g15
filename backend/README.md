@@ -1,0 +1,131 @@
+# Backend - WiFi Detection API
+
+FastAPI backend for WiFi device detection and analysis.
+
+## Setup
+
+### Prerequisites
+- Python 3.8+
+- PostgreSQL 12+
+- MQTT Broker (Node-RED or Mosquitto)
+
+### Installation
+
+1. Create virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Configure environment variables in `.env`:
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/wifi_detection
+MQTT_BROKER=localhost
+MQTT_PORT=1883
+```
+
+4. Run migrations (if using Alembic):
+```bash
+alembic upgrade head
+```
+
+### Running the API
+
+Start the development server:
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API will be available at `http://localhost:8000`
+API documentation: `http://localhost:8000/docs`
+
+## Project Structure
+
+```
+backend/
+├── app/
+│   ├── models/          # SQLAlchemy models
+│   ├── schemas/         # Pydantic schemas
+│   ├── routes/          # API endpoints
+│   ├── mqtt/            # MQTT client
+│   ├── services/        # Business logic (ML service)
+│   ├── main.py          # FastAPI app
+│   ├── config.py        # Configuration
+│   └── database.py      # Database setup
+├── requirements.txt     # Dependencies
+├── .env                 # Environment variables
+└── README.md
+```
+
+## API Endpoints
+
+### Devices
+- `GET /api/devices` - List all devices
+- `GET /api/devices/{mac}` - Get device details
+- `POST /api/devices` - Create/update device
+- `GET /api/devices/{mac}/detections` - Get device detections
+
+### History
+- `GET /api/history/detections` - Get detection history
+- `GET /api/history/stats` - Get statistics
+- `GET /api/history/timeline` - Get timeline data
+
+### System
+- `GET /` - Root endpoint
+- `GET /health` - Health check
+
+## Features
+
+- Real-time WiFi device detection via MQTT
+- Device OS identification using MAC OUI lookup
+- Distance estimation using RSSI
+- Detection history logging
+- Statistics and aggregation
+- Automatic database table creation
+
+## Database Schema
+
+### devices
+- MAC address (unique)
+- First/last seen timestamps
+- RSSI, frequency, SSID
+- OS identification
+- Distance estimation
+
+### detections
+- Device MAC
+- Timestamp
+- RSSI
+- Frequency
+- Location (inside/outside)
+
+### analysis
+- Device MAC
+- OS identified
+- Distance estimated
+- Confidence score
+- Last updated
+
+## Integration with Node-RED
+
+Backend expects MQTT messages on topic: `nodered/wifi/data`
+
+Message format:
+```json
+{
+  "timestamp": "2026-05-19T10:30:45Z",
+  "devices": [
+    {
+      "mac": "AA:BB:CC:DD:EE:FF",
+      "rssi": -65,
+      "frequency": 2412,
+      "ssid": "WiFiNetwork"
+    }
+  ]
+}
+```
