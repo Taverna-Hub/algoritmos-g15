@@ -14,7 +14,6 @@ from app.schemas import (
     AnalysisSchema,
     StatisticsSchema,
 )
-from app.services.ml_service import MLService
 
 router = APIRouter(prefix="/api/devices", tags=["devices"])
 
@@ -37,44 +36,22 @@ def get_device(mac: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=DeviceSchema)
 def create_device(device: DeviceCreate, db: Session = Depends(get_db)):
-    """Create or update a device."""
+    """Create or update a device record without processing MQTT data."""
     db_device = db.query(Device).filter(Device.mac_address == device.mac_address).first()
     
     if db_device:
-        # Update existing device
+        # Update existing device metadata
         for key, value in device.dict(exclude_unset=True).items():
             setattr(db_device, key, value)
         db_device.last_seen = datetime.utcnow()
     else:
-        # Create new device
+        # Create new device record
         db_device = Device(**device.dict())
-    
-    # Perform ML analysis
-    analysis_results = MLService.analyze_device(
-        device.mac_address,
-        device.rssi or -70,
-        device.frequency or 2412
-    )
-    
-    db_device.so_identified = analysis_results["so_identified"]
-    db_device.distance_estimated = analysis_results["distance_estimated"]
+        db_device.last_seen = datetime.utcnow()
     
     db.add(db_device)
     db.commit()
     db.refresh(db_device)
-    
-    # Save analysis
-    analysis = db.query(Analysis).filter(Analysis.device_mac == device.mac_address).first()
-    if not analysis:
-        analysis = Analysis(device_mac=device.mac_address)
-    
-    analysis.so_identified = analysis_results["so_identified"]
-    analysis.distance_estimated = analysis_results["distance_estimated"]
-    analysis.confidence = analysis_results["confidence"]
-    analysis.last_updated = datetime.utcnow()
-    
-    db.add(analysis)
-    db.commit()
     
     return db_device
 

@@ -20,7 +20,7 @@ MAC_OUI_DATABASE = {
 
 
 class MLService:
-    """Mock Machine Learning Service for device analysis."""
+    """Machine Learning service for device analysis."""
     
     @staticmethod
     def identify_os(mac_address: str) -> Optional[str]:

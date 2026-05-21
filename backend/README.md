@@ -5,31 +5,40 @@ FastAPI backend for WiFi device detection and analysis.
 ## Setup
 
 ### Prerequisites
+
 - Python 3.8+
 - PostgreSQL 12+
-- MQTT Broker (Node-RED or Mosquitto)
+- MQTT Broker and Node-RED for data orchestration
 
 ### Installation
 
 1. Create virtual environment:
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 2. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Configure environment variables in `.env`:
+
 ```
 DATABASE_URL=postgresql://user:password@localhost:5432/wifi_detection
-MQTT_BROKER=localhost
-MQTT_PORT=1883
 ```
 
 4. Run migrations (if using Alembic):
+
+```bash
+alembic upgrade head
+```
+
+4. Run migrations (if using Alembic):
+
 ```bash
 alembic upgrade head
 ```
@@ -37,6 +46,7 @@ alembic upgrade head
 ### Running the API
 
 Start the development server:
+
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -65,23 +75,26 @@ backend/
 ## API Endpoints
 
 ### Devices
+
 - `GET /api/devices` - List all devices
 - `GET /api/devices/{mac}` - Get device details
 - `POST /api/devices` - Create/update device
 - `GET /api/devices/{mac}/detections` - Get device detections
 
 ### History
+
 - `GET /api/history/detections` - Get detection history
 - `GET /api/history/stats` - Get statistics
 - `GET /api/history/timeline` - Get timeline data
 
 ### System
+
 - `GET /` - Root endpoint
 - `GET /health` - Health check
 
 ## Features
 
-- Real-time WiFi device detection via MQTT
+- REST API for devices, history, and statistics
 - Device OS identification using MAC OUI lookup
 - Distance estimation using RSSI
 - Detection history logging
@@ -91,6 +104,7 @@ backend/
 ## Database Schema
 
 ### devices
+
 - MAC address (unique)
 - First/last seen timestamps
 - RSSI, frequency, SSID
@@ -98,6 +112,7 @@ backend/
 - Distance estimation
 
 ### detections
+
 - Device MAC
 - Timestamp
 - RSSI
@@ -105,27 +120,15 @@ backend/
 - Location (inside/outside)
 
 ### analysis
+
 - Device MAC
 - OS identified
 - Distance estimated
 - Confidence score
 - Last updated
 
-## Integration with Node-RED
+## Integration with Node-RED and Notebook
 
-Backend expects MQTT messages on topic: `nodered/wifi/data`
+The backend consumes data only from the database. All MQTT ingestion and device analysis are handled by the Notebook service.
 
-Message format:
-```json
-{
-  "timestamp": "2026-05-19T10:30:45Z",
-  "devices": [
-    {
-      "mac": "AA:BB:CC:DD:EE:FF",
-      "rssi": -65,
-      "frequency": 2412,
-      "ssid": "WiFiNetwork"
-    }
-  ]
-}
-```
+A separate notebook process subscribes to Node-RED output on topic `nodered/wifi/data` and persists analyzed device records to the shared database.

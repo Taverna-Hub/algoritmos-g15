@@ -1,10 +1,11 @@
 # Node-RED - MQTT Broker & Data Orchestration
 
-Node-RED acts as the central MQTT broker and orchestrator for WiFi data flow from ESP32 to Backend.
+Node-RED acts as the central MQTT broker and orchestrator for WiFi data flow from ESP32 to the Notebook service.
 
 ## Quick Start
 
 ### Prerequisites
+
 - Docker and Docker Compose installed
 
 ### Start Node-RED and MQTT Broker
@@ -14,6 +15,7 @@ docker-compose up -d
 ```
 
 This will start:
+
 - **Node-RED**: http://localhost:1880
 - **MQTT Broker (Mosquitto)**: localhost:1883
 
@@ -35,6 +37,7 @@ docker-compose logs -f mosquitto
 The main flow performs these operations:
 
 ### Input: `esp32/wifi/scan`
+
 - Receives raw WiFi scan data from ESP32 (real or mocked)
 - Format:
   ```json
@@ -54,7 +57,7 @@ The main flow performs these operations:
 ### Processing
 
 1. **JSON Parse**: Parse incoming JSON
-2. **Validate**: 
+2. **Validate**:
    - Check data structure
    - Validate MAC address format
    - Ensure RSSI and frequency are numeric
@@ -64,6 +67,7 @@ The main flow performs these operations:
    - Clean empty fields
 
 ### Output: `nodered/wifi/data`
+
 - Publishes validated and transformed data
 - Format (same as input, but validated):
   ```json
@@ -81,6 +85,7 @@ The main flow performs these operations:
   ```
 
 ### Error Handling
+
 - Invalid data publishes to `nodered/errors`
 - All errors logged in Node-RED debug panel
 
@@ -96,6 +101,7 @@ The main flow performs these operations:
 The `flows.json` file is automatically loaded when Node-RED starts.
 
 To manually import:
+
 1. In Node-RED UI, click menu → Import
 2. Paste the contents of `flows.json`
 3. Click Import
@@ -105,6 +111,7 @@ To manually import:
 ### Using MQTT CLI
 
 Test publishing to esp32/wifi/scan:
+
 ```bash
 mosquitto_pub -h localhost -t esp32/wifi/scan -m '{
   "timestamp": "2026-05-19T10:30:45Z",
@@ -115,23 +122,21 @@ mosquitto_pub -h localhost -t esp32/wifi/scan -m '{
 ```
 
 Subscribe to output:
+
 ```bash
 mosquitto_sub -h localhost -t nodered/wifi/data
 ```
 
-### Using Hardware Mock
+### Hardware Source
 
-Run the mock ESP32:
-```bash
-cd ../hardware
-python mqtt_publisher.py
-```
+Use a real ESP32 or another MQTT publisher to send WiFi scan payloads to `esp32/wifi/scan`.
 
 ## Configuration
 
 ### MQTT Broker Settings
 
 Edit `docker-compose.yml` to:
+
 - Change port mappings
 - Add authentication
 - Adjust volume mounts
@@ -140,6 +145,7 @@ Edit `docker-compose.yml` to:
 ### Node-RED Settings
 
 Edit the flows to:
+
 - Change input/output topics
 - Add additional transformations
 - Implement retry logic
@@ -148,12 +154,14 @@ Edit the flows to:
 ## Monitoring
 
 Node-RED provides a debug panel to see:
+
 - All messages flowing through the system
 - Validation results
 - Errors and warnings
 - Processing times
 
 Monitor MQTT topics with mosquitto_sub:
+
 ```bash
 mosquitto_sub -h localhost -v -t "nodered/#"
 mosquitto_sub -h localhost -v -t "esp32/#"
@@ -162,6 +170,7 @@ mosquitto_sub -h localhost -v -t "esp32/#"
 ## Production Considerations
 
 For production deployment:
+
 - Enable authentication (username/password)
 - Use TLS/SSL for MQTT
 - Add message persistence
@@ -173,16 +182,19 @@ For production deployment:
 ## Troubleshooting
 
 ### MQTT connection refused
+
 - Check if mosquitto container is running: `docker ps`
 - Check logs: `docker-compose logs mosquitto`
 - Verify firewall isn't blocking port 1883
 
 ### Node-RED can't connect to MQTT
+
 - Check broker hostname (should be `mosquitto` for docker network)
 - Verify network connectivity: `docker network ls`
 - Check Node-RED logs
 
 ### No messages flowing
+
 - Check if ESP32/mock is publishing to correct topic
 - Verify topic names are spelled correctly
 - Enable debug nodes in Node-RED to see message flow

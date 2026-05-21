@@ -1,6 +1,6 @@
 # ML - Machine Learning Module
 
-Machine learning models for WiFi device analysis (currently mocked).
+Machine learning module for WiFi device analysis, implemented as a Notebook service.
 
 ## Features
 
@@ -11,10 +11,7 @@ Machine learning models for WiFi device analysis (currently mocked).
 
 ## Current Status
 
-This module is **MOCKED** for Phase 1. It provides:
-- Deterministic OS identification based on MAC address patterns
-- Simple RSSI-based distance estimation
-- Location determination based on signal strength threshold
+This module processes validated data from Node-RED and persists analysis results to the shared database.
 
 ## Setup
 
@@ -27,26 +24,24 @@ pip install -r requirements.txt
 ### Standalone
 
 ```bash
-python notebook_mock.py
+python notebook.py
 ```
+
+The notebook service listens on the Node-RED output topic and saves processed device records into the database.
 
 ### In Python
 
 ```python
-from notebook_mock import MockMLNotebook
+from ML.notebook import process_payload
 
-notebook = MockMLNotebook()
+payload = {
+    "timestamp": "2026-05-19T10:30:45Z",
+    "devices": [
+        {"mac": "AA:BB:CC:DD:EE:01", "rssi": -55, "frequency": 2412, "ssid": "Test"}
+    ]
+}
 
-# Analyze single device
-result = notebook.analyze_device("AA:BB:CC:DD:EE:01", -55, 2412)
-print(result)
-
-# Batch analyze
-devices = [
-    {"mac": "AA:BB:CC:DD:EE:01", "rssi": -55, "frequency": 2412},
-    {"mac": "5C:F3:70:11:22:33", "rssi": -60, "frequency": 5180},
-]
-results = notebook.batch_analyze(devices)
+process_payload(payload)
 ```
 
 ## Output Format
@@ -64,7 +59,8 @@ results = notebook.batch_analyze(devices)
 ## Distance Estimation
 
 Uses simplified path loss model:
-- **Formula**: Distance = 10^((TxPower - RSSI) / (10 * N))
+
+- **Formula**: Distance = 10^((TxPower - RSSI) / (10 \* N))
 - **TxPower**: -30 dBm (typical WiFi)
 - **N (path loss coefficient)**: 2.0 for 5GHz, 2.5 for 2.4GHz
 
@@ -76,6 +72,7 @@ Uses simplified path loss model:
 ## Future Enhancements
 
 Phase 2+ will include:
+
 - Real ML models for OS identification
 - Advanced distance estimation using multiple frequencies
 - Device type classification (phone, laptop, IoT, etc.)
@@ -85,6 +82,7 @@ Phase 2+ will include:
 ## Integration with Backend
 
 The backend can call this notebook via:
+
 - HTTP API (if exposed)
 - Direct Python import
 - Queue-based async processing
