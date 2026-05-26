@@ -12,12 +12,24 @@
 // Device identifier
 #define DEVICE_ID "esp32_001"
 
-// Scan settings
+// Capture settings
 #define SCAN_INTERVAL_MS 30000
-#define MAX_WIFI_RESULTS 20
+#define CAPTURE_WINDOW_MS 10000
+#define CHANNEL_HOLD_MS 250
+#define WIFI_CHANNEL_MIN 1
+#define WIFI_CHANNEL_MAX 13
+#define MAX_CAPTURED_DEVICES 64
+#define PROBE_QUEUE_LENGTH 128
+#define SERIAL_PRINT_CAPTURED_MACS 1
+
+// Network timeouts
+#define WIFI_CONNECT_TIMEOUT_MS 30000
+#define MQTT_CONNECT_ATTEMPTS 3
+#define MQTT_CONNECT_RETRY_MS 1500
 
 // MQTT topic
 #define MQTT_TOPIC "esp32/wifi/scan"
 
-// Promiscuous capture
-#define PROMISCUOUS_MODE_ENABLED 1
+// MQTT payload sizing
+#define MQTT_BUFFER_SIZE 8192
+#define MQTT_JSON_DOCUMENT_SIZE 12288

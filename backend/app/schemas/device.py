@@ -6,6 +6,9 @@ from typing import Optional
 class DetectionBase(BaseModel):
     rssi: int
     frequency: Optional[int] = None
+    channel: Optional[int] = None
+    frame_type: Optional[str] = None
+    seen_count: Optional[int] = None
     location: Optional[str] = None
 
 
@@ -45,6 +48,9 @@ class DeviceBase(BaseModel):
     mac_address: str
     rssi: Optional[int] = None
     frequency: Optional[int] = None
+    channel: Optional[int] = None
+    frame_type: Optional[str] = None
+    seen_count: Optional[int] = None
     ssid: Optional[str] = None
     so_identified: Optional[str] = None
     distance_estimated: Optional[float] = None
@@ -57,6 +63,9 @@ class DeviceCreate(DeviceBase):
 class DeviceUpdate(BaseModel):
     rssi: Optional[int] = None
     frequency: Optional[int] = None
+    channel: Optional[int] = None
+    frame_type: Optional[str] = None
+    seen_count: Optional[int] = None
     ssid: Optional[str] = None
     so_identified: Optional[str] = None
     distance_estimated: Optional[float] = None

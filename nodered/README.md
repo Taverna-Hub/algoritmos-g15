@@ -1,6 +1,6 @@
 # Node-RED - MQTT Broker & Data Orchestration
 
-Node-RED acts as the central MQTT broker and orchestrator for WiFi data flow from ESP32 to the Notebook service.
+Node-RED acts as the central MQTT broker and orchestrator for passive WiFi MAC capture data from ESP32 to the Notebook service.
 
 ## Quick Start
 
@@ -38,17 +38,20 @@ The main flow performs these operations:
 
 ### Input: `esp32/wifi/scan`
 
-- Receives raw WiFi scan data from ESP32 (real or mocked)
+- Receives raw passive WiFi capture data from ESP32
 - Format:
   ```json
   {
+    "device_id": "esp32_001",
     "timestamp": "2026-05-19T10:30:45Z",
-    "devices": [
+    "packets": [
       {
-        "mac": "AA:BB:CC:DD:EE:FF",
+        "source_mac": "AA:BB:CC:DD:EE:FF",
         "rssi": -65,
+        "channel": 1,
         "frequency": 2412,
-        "ssid": "WiFiNetwork"
+        "frame_type": "probe_req",
+        "seen_count": 3
       }
     ]
   }
@@ -60,7 +63,7 @@ The main flow performs these operations:
 2. **Validate**:
    - Check data structure
    - Validate MAC address format
-   - Ensure RSSI and frequency are numeric
+   - Ensure RSSI, channel, and frequency are numeric
 3. **Transform**:
    - Normalize MAC addresses to uppercase
    - Add processing timestamp
@@ -77,8 +80,10 @@ The main flow performs these operations:
       {
         "mac": "AA:BB:CC:DD:EE:FF",
         "rssi": -65,
+        "channel": 1,
         "frequency": 2412,
-        "ssid": "WiFiNetwork"
+        "frame_type": "probe_req",
+        "seen_count": 3
       }
     ]
   }
@@ -115,8 +120,8 @@ Test publishing to esp32/wifi/scan:
 ```bash
 mosquitto_pub -h localhost -t esp32/wifi/scan -m '{
   "timestamp": "2026-05-19T10:30:45Z",
-  "devices": [
-    {"mac": "AA:BB:CC:DD:EE:01", "rssi": -55, "frequency": 2412, "ssid": "Test"}
+  "packets": [
+    {"source_mac": "AA:BB:CC:DD:EE:01", "rssi": -55, "channel": 1, "frequency": 2412, "frame_type": "probe_req", "seen_count": 3}
   ]
 }'
 ```

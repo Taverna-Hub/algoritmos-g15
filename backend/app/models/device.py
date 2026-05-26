@@ -15,6 +15,9 @@ class Device(Base):
     last_seen = Column(DateTime, default=datetime.utcnow, nullable=False)
     rssi = Column(Integer, nullable=True)
     frequency = Column(Integer, nullable=True)
+    channel = Column(Integer, nullable=True)
+    frame_type = Column(String(32), nullable=True)
+    seen_count = Column(Integer, nullable=True, default=1)
     ssid = Column(String(32), nullable=True)
     so_identified = Column(String(50), nullable=True)
     distance_estimated = Column(Float, nullable=True)
@@ -34,6 +37,9 @@ class Detection(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     rssi = Column(Integer, nullable=False)
     frequency = Column(Integer, nullable=True)
+    channel = Column(Integer, nullable=True)
+    frame_type = Column(String(32), nullable=True)
+    seen_count = Column(Integer, nullable=True, default=1)
     location = Column(String(50), nullable=True)  # "inside" or "outside"
     
     # Relationships

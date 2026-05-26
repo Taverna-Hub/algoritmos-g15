@@ -6,6 +6,7 @@ Machine learning module for WiFi device analysis, implemented as a Notebook serv
 
 - **OS Identification**: Identify device operating system based on MAC OUI
 - **Distance Estimation**: Estimate device distance using RSSI and frequency
+- **Passive Capture Metadata**: Preserve channel, frame type, and seen count from ESP32 captures
 - **Location Detection**: Determine if device is inside or outside
 - **Batch Processing**: Analyze multiple devices at once
 
@@ -36,8 +37,15 @@ from ML.notebook import process_payload
 
 payload = {
     "timestamp": "2026-05-19T10:30:45Z",
-    "devices": [
-        {"mac": "AA:BB:CC:DD:EE:01", "rssi": -55, "frequency": 2412, "ssid": "Test"}
+    "packets": [
+        {
+            "source_mac": "AA:BB:CC:DD:EE:01",
+            "rssi": -55,
+            "channel": 1,
+            "frequency": 2412,
+            "frame_type": "probe_req",
+            "seen_count": 3
+        }
     ]
 }
 

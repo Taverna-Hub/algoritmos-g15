@@ -1,6 +1,6 @@
-# Backend - WiFi Detection API
+# Backend - WiFi MAC Capture API
 
-FastAPI backend for WiFi device detection and analysis.
+FastAPI backend for nearby WiFi MAC capture and signal analysis.
 
 ## Setup
 
@@ -107,7 +107,7 @@ backend/
 
 - MAC address (unique)
 - First/last seen timestamps
-- RSSI, frequency, SSID
+- RSSI, channel, frequency, frame type, seen count, SSID
 - OS identification
 - Distance estimation
 
@@ -116,7 +116,8 @@ backend/
 - Device MAC
 - Timestamp
 - RSSI
-- Frequency
+- Channel and frequency
+- Frame type and seen count
 - Location (inside/outside)
 
 ### analysis

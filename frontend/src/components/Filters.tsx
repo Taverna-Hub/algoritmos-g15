@@ -38,9 +38,9 @@ function Filters({ filters, setFilters, osOptions }: FiltersProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Operating System</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Vendor/OS Estimate</label>
           <select value={filters.os} onChange={handleOsChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-            <option value="">All OS</option>
+            <option value="">All estimates</option>
             {osOptions.map(os => <option key={os} value={os}>{os}</option>)}
           </select>
         </div>

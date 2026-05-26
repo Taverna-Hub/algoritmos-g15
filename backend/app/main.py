@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.database import engine, Base
+from app.database import engine, Base, ensure_optional_capture_columns
 from app.routes import devices_router, history_router
 
 # Setup logging
@@ -20,6 +20,7 @@ def create_tables():
     """Create database tables."""
     try:
         Base.metadata.create_all(bind=engine)
+        ensure_optional_capture_columns()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Error creating tables: {e}")
@@ -39,8 +40,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="WiFi Detection API",
-    description="API for detecting and analyzing WiFi devices",
+    title="WiFi MAC Capture API",
+    description="API for captured nearby WiFi MAC addresses and signal data",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -63,7 +64,7 @@ app.include_router(history_router)
 def root():
     """Root endpoint."""
     return {
-        "message": "WiFi Detection API",
+        "message": "WiFi MAC Capture API",
         "version": "1.0.0"
     }
 

@@ -4,6 +4,9 @@ export interface Detection {
   timestamp?: string
   rssi: number
   frequency?: number
+  channel?: number
+  frame_type?: string
+  seen_count?: number
   location?: string
 }
 
@@ -21,6 +24,9 @@ export interface Device {
   last_seen?: string
   rssi?: number
   frequency?: number
+  channel?: number
+  frame_type?: string
+  seen_count?: number
   ssid?: string
   so_identified?: string
   distance_estimated?: number

@@ -12,7 +12,7 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from backend.app.config import get_settings
-from backend.app.database import SessionLocal, engine, Base
+from backend.app.database import SessionLocal, engine, Base, ensure_optional_capture_columns
 from backend.app.models.device import Device, Detection, Analysis
 from backend.app.services.ml_service import MLService
 
@@ -33,6 +33,26 @@ def normalize_mac(mac: str | None) -> str | None:
         return None
     normalized = mac.strip().upper().replace("-", ":")
     return normalized
+
+
+def channel_to_frequency(channel: Any) -> int | None:
+    try:
+        channel_number = int(channel)
+    except (TypeError, ValueError):
+        return None
+
+    if 1 <= channel_number <= 13:
+        return 2407 + channel_number * 5
+    if channel_number == 14:
+        return 2484
+    return None
+
+
+def parse_int(value: Any, default: int | None = None) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def parse_timestamp(value: Any) -> datetime:
@@ -57,10 +77,14 @@ def extract_devices(payload: dict) -> list[dict]:
     if "packets" in payload and isinstance(payload["packets"], list):
         devices = []
         for packet in payload["packets"]:
+            channel = parse_int(packet.get("channel"))
             devices.append({
-                "mac": packet.get("source_mac") or packet.get("mac"),
+                "mac": packet.get("source_mac") or packet.get("mac") or packet.get("mac_address"),
                 "rssi": packet.get("rssi"),
-                "frequency": packet.get("frequency"),
+                "frequency": packet.get("frequency") or channel_to_frequency(channel),
+                "channel": channel,
+                "frame_type": packet.get("frame_type") or packet.get("subtype"),
+                "seen_count": packet.get("seen_count"),
                 "ssid": packet.get("ssid") or packet.get("network_name") or "",
                 "timestamp": packet.get("timestamp")
             })
@@ -70,14 +94,17 @@ def extract_devices(payload: dict) -> list[dict]:
 
 
 def process_device(session: SessionLocal, device_data: dict, default_timestamp: datetime) -> None:
-    mac_raw = device_data.get("mac") or device_data.get("source_mac")
+    mac_raw = device_data.get("source_mac") or device_data.get("mac") or device_data.get("mac_address")
     mac = normalize_mac(mac_raw)
     if not mac:
         logger.debug("Skipping device record without MAC")
         return
 
-    rssi = device_data.get("rssi")
-    frequency = device_data.get("frequency") or 2412
+    rssi = parse_int(device_data.get("rssi"), -80)
+    channel = parse_int(device_data.get("channel"))
+    frequency = parse_int(device_data.get("frequency")) or channel_to_frequency(channel) or 2412
+    frame_type = device_data.get("frame_type") or device_data.get("subtype") or "management"
+    seen_count = parse_int(device_data.get("seen_count"), 1) or 1
     ssid = device_data.get("ssid") or ""
     timestamp = parse_timestamp(device_data.get("timestamp") or default_timestamp)
 
@@ -89,6 +116,9 @@ def process_device(session: SessionLocal, device_data: dict, default_timestamp: 
 
     db_device.rssi = rssi
     db_device.frequency = frequency
+    db_device.channel = channel
+    db_device.frame_type = frame_type
+    db_device.seen_count = seen_count
     if ssid:
         db_device.ssid = ssid
     db_device.last_seen = timestamp
@@ -112,8 +142,11 @@ def process_device(session: SessionLocal, device_data: dict, default_timestamp: 
     detection = Detection(
         device_mac=mac,
         timestamp=timestamp,
-        rssi=rssi or 0,
+        rssi=rssi or -80,
         frequency=frequency,
+        channel=channel,
+        frame_type=frame_type,
+        seen_count=seen_count,
         location=analysis_results.get("location")
     )
     session.add(detection)
@@ -165,6 +198,7 @@ def on_message(client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> Non
 
 def build_database() -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_optional_capture_columns()
     logger.info("Database tables ensured")
 
 

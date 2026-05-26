@@ -10,6 +10,15 @@ interface Props {
   selectedDeviceMac?: string | undefined
 }
 
+const frameLabels: Record<string, string> = {
+  probe_req: 'Probe request',
+  probe_resp: 'Probe response',
+  beacon: 'Beacon',
+  management: 'Management',
+}
+
+const formatFrameType = (frameType?: string) => frameLabels[frameType ?? ''] ?? (frameType || '-')
+
 function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Props) {
   if (loading) {
     return (
@@ -25,7 +34,7 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
   if (devices.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-        <p>No devices found. Make sure the WiFi scanner is running.</p>
+        <p>No MACs captured. Make sure the ESP32 capture firmware is running.</p>
       </div>
     )
   }
@@ -37,10 +46,12 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">MAC Address</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">OS</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Frame</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">RSSI (dBm)</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Distance</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Location</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Channel</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Frequency</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Seen</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Est. Distance</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Last Seen</th>
             </tr>
           </thead>
@@ -56,19 +67,17 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
               >
                 <td className="px-6 py-4 text-sm font-mono font-medium">{device.mac_address}</td>
                 <td className="px-6 py-4 text-sm">
-                  <span className="inline-block px-2 py-1 rounded bg-gray-100 text-gray-800">{device.so_identified || 'Unknown'}</span>
+                  <span className="inline-block px-2 py-1 rounded bg-gray-100 text-gray-800">{formatFrameType(device.frame_type)}</span>
                 </td>
                 <td className="px-6 py-4 text-sm">
                   <span className={clsx('font-semibold', (device.rssi ?? -100) > -70 ? 'text-green-600' : 'text-orange-600')}>
                     {device.rssi} dBm
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm">{device.distance_estimated ? `${device.distance_estimated.toFixed(2)}m` : '-'}</td>
-                <td className="px-6 py-4 text-sm">
-                  <span className={clsx('inline-block px-2 py-1 rounded text-xs font-medium', (device.rssi ?? -100) > -70 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800')}>
-                    {(device.rssi ?? -100) > -70 ? 'Inside' : 'Outside'}
-                  </span>
-                </td>
+                <td className="px-6 py-4 text-sm">{device.channel ?? '-'}</td>
+                <td className="px-6 py-4 text-sm">{device.frequency != null ? `${device.frequency} MHz` : '-'}</td>
+                <td className="px-6 py-4 text-sm">{device.seen_count ?? 1}</td>
+                <td className="px-6 py-4 text-sm">{device.distance_estimated != null ? `${device.distance_estimated.toFixed(2)}m` : '-'}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{device.last_seen ? new Date(device.last_seen).toLocaleTimeString() : '-'}</td>
               </tr>
             ))}

@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, Signal, MapPin, Smartphone } from 'lucide-react'
+import { X, Signal, MapPin, Smartphone, Radio, Hash } from 'lucide-react'
 import { useDeviceDetail } from '../hooks/useData'
 import type { Device } from '../types'
 
@@ -7,6 +7,15 @@ interface Props {
   device: Device
   onClose: () => void
 }
+
+const frameLabels: Record<string, string> = {
+  probe_req: 'Probe request',
+  probe_resp: 'Probe response',
+  beacon: 'Beacon',
+  management: 'Management',
+}
+
+const formatFrameType = (frameType?: string) => frameLabels[frameType ?? ''] ?? (frameType || '-')
 
 function DeviceDetail({ device, onClose }: Props) {
   const { detections, loading } = useDeviceDetail(device?.mac_address)
@@ -16,7 +25,7 @@ function DeviceDetail({ device, onClose }: Props) {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full">
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 flex items-center justify-between">
-        <h3 className="text-white font-bold">Device Details</h3>
+        <h3 className="text-white font-bold">MAC Details</h3>
         <button onClick={onClose} className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded"><X className="w-5 h-5" /></button>
       </div>
 
@@ -29,9 +38,39 @@ function DeviceDetail({ device, onClose }: Props) {
         <div>
           <div className="flex items-center space-x-2">
             <Smartphone className="w-4 h-4 text-primary-600" />
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Operating System</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Vendor/OS Estimate</p>
           </div>
           <p className="text-sm mt-1">{device.so_identified || 'Unknown'}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="flex items-center space-x-2">
+              <Hash className="w-4 h-4 text-primary-600" />
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Channel</p>
+            </div>
+            <p className="text-sm mt-1">{device.channel ?? '-'}</p>
+          </div>
+
+          <div>
+            <div className="flex items-center space-x-2">
+              <Radio className="w-4 h-4 text-primary-600" />
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Frequency</p>
+            </div>
+            <p className="text-sm mt-1">{device.frequency != null ? `${device.frequency} MHz` : '-'}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Frame</p>
+            <p className="text-sm mt-1">{formatFrameType(device.frame_type)}</p>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Seen Count</p>
+            <p className="text-sm mt-1">{device.seen_count ?? 1}</p>
+          </div>
         </div>
 
         <div>
@@ -55,9 +94,9 @@ function DeviceDetail({ device, onClose }: Props) {
         <div>
           <div className="flex items-center space-x-2">
             <MapPin className="w-4 h-4 text-primary-600" />
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Distance</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Estimated Distance (RSSI)</p>
           </div>
-          <p className="text-sm mt-1">{device.distance_estimated ? `${device.distance_estimated.toFixed(2)} meters` : 'Calculating...'}</p>
+          <p className="text-sm mt-1">{device.distance_estimated != null ? `${device.distance_estimated.toFixed(2)} meters` : 'Calculating...'}</p>
         </div>
 
         <div>
@@ -84,7 +123,11 @@ function DeviceDetail({ device, onClose }: Props) {
               {detections.slice(0, 5).map((detection, idx) => (
                 <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
                   <p className="text-gray-600">{new Date(detection.timestamp ?? '').toLocaleTimeString()}</p>
-                  <p className="text-gray-500">RSSI: {detection.rssi} dBm</p>
+                  <p className="text-gray-500">
+                    RSSI: {detection.rssi} dBm
+                    {detection.frequency != null ? ` | ${detection.frequency} MHz` : ''}
+                    {detection.channel != null ? ` | ch ${detection.channel}` : ''}
+                  </p>
                 </div>
               ))}
             </div>
