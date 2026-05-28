@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { deviceService, historyService } from '../services/api'
+import { getMockDetections, getMockDevice, mockDevices, mockStatistics, mockTimeline } from '../mockData'
 import type { Device, Detection, Statistics } from '../types'
 
 export const useDevices = (refreshInterval = 5000) => {
@@ -15,6 +16,7 @@ export const useDevices = (refreshInterval = 5000) => {
       setError(null)
     } catch (err: any) {
       console.error('Error fetching devices:', err)
+      setDevices(mockDevices)
       setError(err.message || String(err))
     } finally {
       setLoading(false)
@@ -50,6 +52,8 @@ export const useDeviceDetail = (mac?: string) => {
       setError(null)
     } catch (err: any) {
       console.error('Error fetching device:', err)
+      setDevice(getMockDevice(mac))
+      setDetections(getMockDetections(mac))
       setError(err.message || String(err))
     } finally {
       setLoading(false)
@@ -76,6 +80,7 @@ export const useStatistics = (startDate?: string, endDate?: string) => {
       setError(null)
     } catch (err: any) {
       console.error('Error fetching statistics:', err)
+      setStats(mockStatistics)
       setError(err.message || String(err))
     } finally {
       setLoading(false)
@@ -102,6 +107,7 @@ export const useTimeline = (startDate?: string, endDate?: string, interval = 'ho
       setError(null)
     } catch (err: any) {
       console.error('Error fetching timeline:', err)
+      setTimeline(mockTimeline)
       setError(err.message || String(err))
     } finally {
       setLoading(false)

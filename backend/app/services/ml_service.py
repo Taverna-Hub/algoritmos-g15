@@ -1,56 +1,31 @@
-import json
 from typing import Optional, Dict
 import logging
 
-logger = logging.getLogger(__name__)
+from app.services.vendor_lookup import identify_vendor
 
-# Mock MAC OUI database for OS identification
-MAC_OUI_DATABASE = {
-    "AA:BB:CC": "Apple",
-    "00:1A:2B": "Cisco",
-    "08:00:27": "Cadmus Computer Systems",
-    "5C:F3:70": "Samsung",
-    "D8:BB:C1": "TP-Link",
-    "2C:F0:EE": "Huawei",
-    "B4:B0:24": "Xiaomi",
-    "00:50:F2": "Microsoft",
-    "00:0A:95": "Cisco",
-    "00:13:10": "Linksys",
-}
+logger = logging.getLogger(__name__)
 
 
 class MLService:
     """Machine Learning service for device analysis."""
     
     @staticmethod
-    def identify_os(mac_address: str) -> Optional[str]:
+    def identify_vendor(mac_address: str) -> str:
         """
-        Identify OS based on MAC address OUI.
-        
+        Identify device vendor/company based on MAC address assignment.
+
         Args:
             mac_address: Device MAC address
-            
+
         Returns:
-            Identified OS or None
+            Identified vendor/company or fallback label
         """
-        if not mac_address:
-            return None
-            
-        # Get first 8 characters (OUI)
-        oui = mac_address[:8].upper()
-        
-        # Look up in mock database
-        for mac_prefix, os_name in MAC_OUI_DATABASE.items():
-            if mac_address.upper().startswith(mac_prefix):
-                return os_name
-        
-        # Default classification based on patterns
-        if mac_address.upper().startswith("AA:BB"):
-            return "Apple"
-        elif mac_address.upper().startswith("00:"):
-            return "Legacy/Unknown"
-        
-        return "Unknown"
+        return identify_vendor(mac_address)
+
+    @staticmethod
+    def identify_os(mac_address: str) -> Optional[str]:
+        """Backward-compatible alias for vendor identification."""
+        return MLService.identify_vendor(mac_address)
     
     @staticmethod
     def estimate_distance(rssi: int, frequency: int = 2412) -> float:
@@ -113,7 +88,7 @@ class MLService:
         Returns:
             Dictionary with analysis results
         """
-        os_identified = MLService.identify_os(mac_address)
+        os_identified = MLService.identify_vendor(mac_address)
         distance = MLService.estimate_distance(rssi, frequency)
         location = MLService.determine_location(rssi)
         

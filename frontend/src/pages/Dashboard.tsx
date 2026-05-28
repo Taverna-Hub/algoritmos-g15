@@ -43,19 +43,19 @@ function Dashboard(): JSX.Element {
   const osOptions = [...new Set(devices.map(d => d.so_identified).filter(Boolean))] as string[]
   const activeChannels = new Set(devices.map(d => d.channel).filter(Boolean)).size
 
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">Error loading capture data: {error}</div>
-    )
-  }
-
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+          Não foi possível carregar os dados reais. Exibindo dados simulados com MAC, RSSI, canal, frequência em Hz, frame e quantidade de detecções.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="WiFi MACs" value={stats?.total_devices ?? 0} icon={<Smartphone className="w-6 h-6" />} color="blue" />
-        <StatCard title="Captures" value={stats?.total_detections ?? 0} icon={<Wifi className="w-6 h-6" />} color="green" />
-        <StatCard title="Channels" value={activeChannels} icon={<Radio className="w-6 h-6" />} color="purple" />
-        <StatCard title="Strong Signal" value={stats?.devices_inside ?? 0} icon={<MapPin className="w-6 h-6" />} color="orange" />
+        <StatCard title="MACs WiFi" value={stats?.total_devices ?? 0} icon={<Smartphone className="w-6 h-6" />} color="blue" />
+        <StatCard title="Capturas" value={stats?.total_detections ?? 0} icon={<Wifi className="w-6 h-6" />} color="green" />
+        <StatCard title="Canais" value={activeChannels} icon={<Radio className="w-6 h-6" />} color="purple" />
+        <StatCard title="Sinal forte" value={stats?.devices_inside ?? 0} icon={<MapPin className="w-6 h-6" />} color="orange" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -69,7 +69,7 @@ function Dashboard(): JSX.Element {
           {selectedDevice ? (
             <DeviceDetail device={selectedDevice} onClose={() => setSelectedDevice(null)} />
           ) : (
-            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500"><p>Select a MAC to view details</p></div>
+            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500"><p>Selecione um MAC para ver os detalhes</p></div>
           )}
         </div>
       </div>

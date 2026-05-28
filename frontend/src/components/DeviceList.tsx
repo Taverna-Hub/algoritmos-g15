@@ -2,6 +2,7 @@ import React from 'react'
 import { Activity } from 'lucide-react'
 import clsx from 'clsx'
 import type { Device } from '../types'
+import { formatFrequencyHz } from '../utils/formatters'
 
 interface Props {
   devices: Device[]
@@ -11,10 +12,10 @@ interface Props {
 }
 
 const frameLabels: Record<string, string> = {
-  probe_req: 'Probe request',
-  probe_resp: 'Probe response',
+  probe_req: 'Solicitação probe',
+  probe_resp: 'Resposta probe',
   beacon: 'Beacon',
-  management: 'Management',
+  management: 'Gerenciamento',
 }
 
 const formatFrameType = (frameType?: string) => frameLabels[frameType ?? ''] ?? (frameType || '-')
@@ -26,7 +27,7 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
         <div className="animate-spin">
           <Activity className="w-8 h-8 text-primary-600 mx-auto" />
         </div>
-        <p className="mt-2 text-gray-600">Loading devices...</p>
+        <p className="mt-2 text-gray-600">Carregando dispositivos...</p>
       </div>
     )
   }
@@ -34,7 +35,7 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
   if (devices.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-        <p>No MACs captured. Make sure the ESP32 capture firmware is running.</p>
+        <p>Nenhum MAC capturado. Verifique se o firmware de captura do ESP32 está em execução.</p>
       </div>
     )
   }
@@ -45,14 +46,14 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">MAC Address</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Endereço MAC</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Frame</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">RSSI (dBm)</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Channel</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Frequency</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Seen</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Est. Distance</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Last Seen</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Canal</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Frequência (Hz)</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Visto</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Distância est.</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Visto por último</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -75,7 +76,7 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm">{device.channel ?? '-'}</td>
-                <td className="px-6 py-4 text-sm">{device.frequency != null ? `${device.frequency} MHz` : '-'}</td>
+                <td className="px-6 py-4 text-sm">{formatFrequencyHz(device.frequency)}</td>
                 <td className="px-6 py-4 text-sm">{device.seen_count ?? 1}</td>
                 <td className="px-6 py-4 text-sm">{device.distance_estimated != null ? `${device.distance_estimated.toFixed(2)}m` : '-'}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{device.last_seen ? new Date(device.last_seen).toLocaleTimeString() : '-'}</td>

@@ -10,7 +10,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <string.h>
-#include <time.h>
 
 struct ProbeEvent {
   uint8_t mac[6];
@@ -33,27 +32,11 @@ PubSubClient mqttClient(espClient);
 
 static QueueHandle_t probeQueue = nullptr;
 static ObservedDevice observedDevices[MAX_CAPTURED_DEVICES];
+static char mqttPayload[MQTT_BUFFER_SIZE];
 static unsigned long lastCaptureMillis = 0;
-static bool timeConfigured = false;
 
 int computeFrequencyFromChannel(uint8_t channel);
 void wifiPromiscuousRx(void *buf, wifi_promiscuous_pkt_type_t type);
-
-String getIsoTimestamp() {
-  time_t now = time(nullptr);
-  if (now <= 0) {
-    return String("");
-  }
-
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-
-  char buffer[32];
-  snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02dZ",
-           timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-           timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-  return String(buffer);
-}
 
 const char *frameTypeName(uint8_t frameType) {
   switch (frameType) {
@@ -193,6 +176,11 @@ void printObservedDevices() {
 #endif
 }
 
+void configureRadioForCapture() {
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
+}
+
 void disconnectNetworkForCapture() {
   if (mqttClient.connected()) {
     mqttClient.disconnect();
@@ -200,7 +188,7 @@ void disconnectNetworkForCapture() {
 
   WiFi.disconnect(true, false);
   delay(100);
-  WiFi.mode(WIFI_STA);
+  configureRadioForCapture();
 }
 
 void startPromiscuousCapture() {
@@ -253,11 +241,13 @@ void runCaptureWindow() {
 
 bool connectToWiFi() {
   if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("WiFi already connected, IP: %s\n", WiFi.localIP().toString().c_str());
     return true;
   }
 
   Serial.printf("Connecting to WiFi '%s'...\n", WIFI_SSID);
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
   const unsigned long startedAt = millis();
@@ -274,26 +264,6 @@ bool connectToWiFi() {
 
   Serial.println("WiFi connection failed");
   return false;
-}
-
-void configureTimeIfNeeded() {
-  if (timeConfigured) {
-    return;
-  }
-
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.println("Waiting for NTP time...");
-
-  for (int i = 0; i < 20; ++i) {
-    if (time(nullptr) > 1700000000) {
-      timeConfigured = true;
-      Serial.println("NTP time configured");
-      return;
-    }
-    delay(250);
-  }
-
-  Serial.println("NTP time not available yet");
 }
 
 bool connectToMqtt() {
@@ -318,9 +288,14 @@ bool connectToMqtt() {
 }
 
 bool publishCaptureResults() {
+  const int count = observedCount();
+  if (count == 0) {
+    Serial.println("No captured MACs to publish");
+    return true;
+  }
+
   DynamicJsonDocument doc(MQTT_JSON_DOCUMENT_SIZE);
   doc["device_id"] = DEVICE_ID;
-  doc["timestamp"] = getIsoTimestamp();
 
   JsonArray packets = doc.createNestedArray("packets");
   for (int i = 0; i < MAX_CAPTURED_DEVICES; ++i) {
@@ -348,17 +323,17 @@ bool publishCaptureResults() {
     return false;
   }
 
-  char payload[MQTT_BUFFER_SIZE];
-  const size_t len = serializeJson(doc, payload, sizeof(payload));
+  const size_t len = serializeJson(doc, mqttPayload, sizeof(mqttPayload));
 
   Serial.printf("Publishing %u bytes with %d MACs to %s\n",
-                (unsigned)len, (int)packets.size(), MQTT_TOPIC);
+                (unsigned)len, count, MQTT_TOPIC);
 
-  if (!mqttClient.publish(MQTT_TOPIC, payload, len)) {
-    Serial.println("MQTT publish failed");
+  if (!mqttClient.publish(MQTT_TOPIC, mqttPayload, len)) {
+    Serial.printf("MQTT publish failed, rc=%d\n", mqttClient.state());
     return false;
   }
 
+  Serial.println("MQTT publish succeeded");
   return true;
 }
 
@@ -415,6 +390,7 @@ void setup() {
 
   mqttClient.setServer(MQTT_BROKER_IP, MQTT_BROKER_PORT);
   mqttClient.setBufferSize(MQTT_BUFFER_SIZE);
+  configureRadioForCapture();
 
   lastCaptureMillis = millis() - SCAN_INTERVAL_MS;
 }
@@ -431,17 +407,14 @@ void loop() {
   runCaptureWindow();
 
   if (!wifiCredentialsConfigured()) {
+    Serial.println("WiFi credentials are not configured; skipping MQTT publish");
     lastCaptureMillis = millis();
     return;
   }
 
-  if (connectToWiFi()) {
-    configureTimeIfNeeded();
-
-    if (connectToMqtt()) {
-      publishCaptureResults();
-      mqttClient.loop();
-    }
+  if (connectToWiFi() && connectToMqtt()) {
+    publishCaptureResults();
+    mqttClient.loop();
   }
 
   lastCaptureMillis = millis();

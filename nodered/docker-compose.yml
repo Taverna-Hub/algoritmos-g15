@@ -1,12 +1,9 @@
-version: '3.8'
-
 services:
   node-red:
     image: nodered/node-red:latest
     container_name: nodered_wifi_detection
     ports:
       - "1880:1880"
-      - "1883:1883"
     volumes:
       - node_red_data:/data
       - ./flows.json:/data/flows.json
@@ -31,10 +28,31 @@ services:
     restart: unless-stopped
     command: mosquitto -c /mosquitto/config/mosquitto.conf
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: wifi_detection_postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=wifi_detection
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wifi_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d wifi_detection"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   node_red_data:
   mosquitto_data:
   mosquitto_logs:
+  postgres_data:
 
 networks:
   wifi_network:

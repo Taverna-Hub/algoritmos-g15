@@ -12,7 +12,7 @@ function App(): JSX.Element {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <h1 className="text-3xl font-bold text-primary-800">WiFi MAC Capture</h1>
-              <p className="ml-4 text-gray-600">Nearby device monitoring</p>
+              <p className="ml-4 text-gray-600">Monitoramento de dispositivos próximos</p>
             </div>
             <div className="text-sm text-gray-500">
               Status: <span className="text-green-600 font-semibold">Online</span>
@@ -32,7 +32,7 @@ function App(): JSX.Element {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Dashboard
+              Painel
             </button>
             <button
               onClick={() => setCurrentPage('history')}
@@ -42,7 +42,7 @@ function App(): JSX.Element {
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              History
+              Histórico
             </button>
           </div>
         </div>
@@ -52,14 +52,14 @@ function App(): JSX.Element {
         {currentPage === 'dashboard' && <Dashboard />}
         {currentPage === 'history' && (
           <div className="text-center py-12">
-            <p className="text-gray-600">History page coming soon...</p>
+            <p className="text-gray-600">Página de histórico em breve...</p>
           </div>
         )}
       </main>
 
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 py-6 text-center text-gray-600 text-sm">
-          <p>WiFi MAC Capture System v1.0.0</p>
+          <p>Sistema WiFi MAC Capture v1.0.0</p>
         </div>
       </footer>
     </div>

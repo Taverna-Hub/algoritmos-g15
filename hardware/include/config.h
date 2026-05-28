@@ -1,13 +1,14 @@
 // Configuration for ESP32 firmware
 #pragma once
 
-// WiFi credentials (override at build time or use WiFiManager)
-#define WIFI_SSID "your_ssid"
-#define WIFI_PASS "your_password"
+// WiFi credentials
+#define WIFI_SSID "uaifai-tiradentes"
+#define WIFI_PASS "bemvindoaocesar"
 
-// MQTT broker
-#define MQTT_BROKER_IP "192.168.1.100"
+// MQTT broker. Use your computer's LAN IP, not localhost.
+#define MQTT_BROKER_IP "172.26.67.34"
 #define MQTT_BROKER_PORT 1883
+#define MQTT_TOPIC "esp32/wifi/scan"
 
 // Device identifier
 #define DEVICE_ID "esp32_001"
@@ -26,9 +27,6 @@
 #define WIFI_CONNECT_TIMEOUT_MS 30000
 #define MQTT_CONNECT_ATTEMPTS 3
 #define MQTT_CONNECT_RETRY_MS 1500
-
-// MQTT topic
-#define MQTT_TOPIC "esp32/wifi/scan"
 
 // MQTT payload sizing
 #define MQTT_BUFFER_SIZE 8192

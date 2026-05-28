@@ -1,0 +1,74 @@
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.venv/
+venv/
+env/
+ENV/
+backend/venv/
+ML/venv/
+.uv-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Jupyter / notebooks
+.ipynb_checkpoints/
+notebooks/executed.ipynb
+notebooks/mlflow.db
+
+# Node / Vite
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data and databases
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs/
+
+# Node-RED local runtime data
+nodered/data/
+nodered/.config.*
+nodered/.sessions.json
+nodered/.flows_cred.json
+
+# PlatformIO / embedded tooling
+.pio/
+hardware/.pio/
+hardware/.vscode/.browse.c_cpp.db*
+hardware/.vscode/c_cpp_properties.json
+hardware/.vscode/launch.json
+hardware/.vscode/ipch/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json

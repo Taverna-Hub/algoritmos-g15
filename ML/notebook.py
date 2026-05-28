@@ -8,13 +8,16 @@ from typing import Any
 import paho.mqtt.client as mqtt
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
+BACKEND_DIR = os.path.join(ROOT_DIR, "backend")
 
-from backend.app.config import get_settings
-from backend.app.database import SessionLocal, engine, Base, ensure_optional_capture_columns
-from backend.app.models.device import Device, Detection, Analysis
-from backend.app.services.ml_service import MLService
+for path in (ROOT_DIR, BACKEND_DIR):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+from app.config import get_settings
+from app.database import SessionLocal, engine, Base, ensure_optional_capture_columns
+from app.models.device import Device, Detection, Analysis
+from app.services.ml_service import MLService
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

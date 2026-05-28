@@ -1,12 +1,16 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Database
-    database_url: str = "postgresql://user:password@localhost:5432/wifi_detection"
+    database_url: str = "postgresql://user:password@localhost:5433/wifi_detection"
     
     # MQTT
     mqtt_broker: str = "localhost"
@@ -25,7 +29,7 @@ class Settings(BaseSettings):
     ml_cache_ttl: int = 300
     
     class Config:
-        env_file = ".env"
+        env_file = ENV_FILE
         case_sensitive = False
 
 
