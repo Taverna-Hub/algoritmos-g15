@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react'
-import { useDevices, useStatistics } from '../hooks/useData'
-import StatCard from '../components/StatCard'
+import { useDevices } from '../hooks/useData'
+import DashboardKpiCard from '../components/DashboardKpiCard'
 import DeviceList from '../components/DeviceList'
 import DeviceDetail from '../components/DeviceDetail'
 import Filters from '../components/Filters'
-import { Wifi, MapPin, Smartphone, Radio } from 'lucide-react'
+import DistanceHeatmap from '../components/DistanceHeatmap'
+import ManufacturerDonutChart from '../components/ManufacturerDonutChart'
+import { MapPin, Smartphone, Tags } from 'lucide-react'
 import type { Device } from '../types'
 
 function Dashboard(): JSX.Element {
@@ -17,8 +19,7 @@ function Dashboard(): JSX.Element {
     maxRssi: -30,
   })
 
-  const { devices, loading, error } = useDevices(5000)
-  const { stats } = useStatistics(undefined, undefined)
+  const { devices, loading, error } = useDevices()
 
   const filteredDevices = useMemo(() => {
     return devices.filter(device => {
@@ -40,8 +41,30 @@ function Dashboard(): JSX.Element {
     })
   }, [devices, filters])
 
-  const osOptions = [...new Set(devices.map(d => d.so_identified).filter(Boolean))] as string[]
-  const activeChannels = new Set(devices.map(d => d.channel).filter(Boolean)).size
+  const osOptions = useMemo(() => {
+    return [...new Set(devices.map(d => d.so_identified).filter(Boolean))] as string[]
+  }, [devices])
+
+  const manufacturerChartData = useMemo(() => {
+    const counts = filteredDevices.reduce<Record<string, number>>((acc, device) => {
+      const manufacturer = device.so_identified || 'Desconhecido'
+      acc[manufacturer] = (acc[manufacturer] ?? 0) + 1
+      return acc
+    }, {})
+
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((left, right) => right.value - left.value)
+  }, [filteredDevices])
+
+  const peopleInRoom = useMemo(() => {
+    return filteredDevices.filter(device => (device.rssi ?? -100) > -70).length
+  }, [filteredDevices])
+
+  const mostCommonManufacturer = useMemo(() => {
+    const knownManufacturers = manufacturerChartData.filter(item => item.name !== 'Desconhecido')
+    return knownManufacturers[0]?.name ?? 'Desconhecida'
+  }, [manufacturerChartData])
 
   return (
     <div className="space-y-6">
@@ -51,11 +74,35 @@ function Dashboard(): JSX.Element {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="MACs WiFi" value={stats?.total_devices ?? 0} icon={<Smartphone className="w-6 h-6" />} color="blue" />
-        <StatCard title="Capturas" value={stats?.total_detections ?? 0} icon={<Wifi className="w-6 h-6" />} color="green" />
-        <StatCard title="Canais" value={activeChannels} icon={<Radio className="w-6 h-6" />} color="purple" />
-        <StatCard title="Sinal forte" value={stats?.devices_inside ?? 0} icon={<MapPin className="w-6 h-6" />} color="orange" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <DashboardKpiCard
+          title="Pessoas na sala"
+          value={peopleInRoom}
+          description="Dispositivos filtrados com sinal forte"
+          icon={<MapPin className="w-6 h-6" />}
+          tone="green"
+        />
+        <DashboardKpiCard
+          title="Marca mais comum"
+          value={mostCommonManufacturer}
+          description="Fabricante mais frequente na selecao"
+          icon={<Tags className="w-6 h-6" />}
+          tone="orange"
+        />
+        <DashboardKpiCard
+          title="Dispositivos detectados"
+          value={filteredDevices.length}
+          description="MACs visiveis apos os filtros"
+          icon={<Smartphone className="w-6 h-6" />}
+          tone="blue"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2">
+          <DistanceHeatmap devices={filteredDevices} />
+        </div>
+        <ManufacturerDonutChart data={manufacturerChartData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -65,7 +112,7 @@ function Dashboard(): JSX.Element {
           <DeviceList devices={filteredDevices} loading={loading} onSelectDevice={setSelectedDevice} selectedDeviceMac={selectedDevice?.mac_address} />
         </div>
 
-        <div>
+        <div className="self-start">
           {selectedDevice ? (
             <DeviceDetail device={selectedDevice} onClose={() => setSelectedDevice(null)} />
           ) : (

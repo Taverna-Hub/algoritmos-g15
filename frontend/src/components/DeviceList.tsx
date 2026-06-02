@@ -1,5 +1,5 @@
-import React from 'react'
-import { Activity } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Activity, ChevronLeft, ChevronRight } from 'lucide-react'
 import clsx from 'clsx'
 import type { Device } from '../types'
 import { formatFrequencyHz } from '../utils/formatters'
@@ -21,6 +21,30 @@ const frameLabels: Record<string, string> = {
 const formatFrameType = (frameType?: string) => frameLabels[frameType ?? ''] ?? (frameType || '-')
 
 function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Props) {
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const totalPages = Math.max(1, Math.ceil(devices.length / pageSize))
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, devices.length)
+  const deviceSetKey = useMemo(() => {
+    return devices.map(device => device.mac_address).sort().join('|')
+  }, [devices])
+
+  const paginatedDevices = useMemo(() => {
+    return devices.slice(startIndex, endIndex)
+  }, [devices, startIndex, endIndex])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [deviceSetKey, pageSize])
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6 text-center">
@@ -57,7 +81,7 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
             </tr>
           </thead>
           <tbody className="divide-y">
-            {devices.map(device => (
+            {paginatedDevices.map(device => (
               <tr
                 key={device.mac_address}
                 onClick={() => onSelectDevice(device)}
@@ -84,6 +108,54 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-col gap-3 border-t bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>Mostrar</span>
+          <select
+            value={pageSize}
+            onChange={(event) => setPageSize(Number(event.target.value))}
+            className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
+          <span>por pagina</span>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <p className="text-sm text-gray-600">
+            {startIndex + 1}-{endIndex} de {devices.length}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Pagina anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <span className="min-w-[5rem] text-center text-sm font-medium text-gray-700">
+              {currentPage} / {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+              disabled={currentPage === totalPages}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Proxima pagina"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

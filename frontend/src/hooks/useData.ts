@@ -3,14 +3,16 @@ import { deviceService, historyService } from '../services/api'
 import { getMockDetections, getMockDevice, mockDevices, mockStatistics, mockTimeline } from '../mockData'
 import type { Device, Detection, Statistics } from '../types'
 
-export const useDevices = (refreshInterval = 5000) => {
+export const useDevices = (refreshInterval = 60000) => {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchDevices = async () => {
+  const fetchDevices = async (showLoading = false) => {
     try {
-      setLoading(true)
+      if (showLoading) {
+        setLoading(true)
+      }
       const response = await deviceService.getDevices()
       setDevices(response.data)
       setError(null)
@@ -24,12 +26,12 @@ export const useDevices = (refreshInterval = 5000) => {
   }
 
   useEffect(() => {
-    fetchDevices()
-    const interval = setInterval(fetchDevices, refreshInterval)
+    fetchDevices(true)
+    const interval = setInterval(() => fetchDevices(false), refreshInterval)
     return () => clearInterval(interval)
   }, [refreshInterval])
 
-  return { devices, loading, error, refetch: fetchDevices }
+  return { devices, loading, error, refetch: () => fetchDevices(true) }
 }
 
 export const useDeviceDetail = (mac?: string) => {

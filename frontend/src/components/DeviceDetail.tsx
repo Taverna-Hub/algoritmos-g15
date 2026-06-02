@@ -24,7 +24,7 @@ function DeviceDetail({ device, onClose }: Props) {
   if (!device) return null
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full">
+    <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col">
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 flex items-center justify-between">
         <h3 className="text-white font-bold">Detalhes do MAC</h3>
         <button onClick={onClose} className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded"><X className="w-5 h-5" /></button>

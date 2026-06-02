@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import sys
 from datetime import datetime
 from typing import Any
@@ -29,13 +30,25 @@ settings = get_settings()
 
 MQTT_TOPIC = "nodered/wifi/data"
 MQTT_CLIENT_ID = "notebook-data-processor"
+MAC_HEX_PATTERN = re.compile(r"^[0-9A-F]{12}$")
 
 
 def normalize_mac(mac: str | None) -> str | None:
-    if not mac:
+    if not mac or not isinstance(mac, str):
         return None
-    normalized = mac.strip().upper().replace("-", ":")
-    return normalized
+
+    compact_mac = re.sub(r"[^0-9A-Fa-f]", "", mac).upper()
+    if not MAC_HEX_PATTERN.match(compact_mac):
+        return None
+
+    return ":".join(compact_mac[index:index + 2] for index in range(0, 12, 2))
+
+
+def should_ignore_mac(mac: str) -> bool:
+    octets = [int(part, 16) for part in mac.split(":")]
+    return all(octet == 0x00 for octet in octets) or all(
+        octet == 0xFF for octet in octets
+    ) or bool(octets[0] & 0x01)
 
 
 def channel_to_frequency(channel: Any) -> int | None:
@@ -96,12 +109,16 @@ def extract_devices(payload: dict) -> list[dict]:
     return []
 
 
-def process_device(session: SessionLocal, device_data: dict, default_timestamp: datetime) -> None:
+def build_device_record(device_data: dict, default_timestamp: datetime) -> dict | None:
     mac_raw = device_data.get("source_mac") or device_data.get("mac") or device_data.get("mac_address")
     mac = normalize_mac(mac_raw)
     if not mac:
-        logger.debug("Skipping device record without MAC")
-        return
+        logger.debug("Skipping device record without a valid MAC")
+        return None
+
+    if should_ignore_mac(mac):
+        logger.debug(f"Skipping ignored MAC address: {mac}")
+        return None
 
     rssi = parse_int(device_data.get("rssi"), -80)
     channel = parse_int(device_data.get("channel"))
@@ -110,6 +127,62 @@ def process_device(session: SessionLocal, device_data: dict, default_timestamp: 
     seen_count = parse_int(device_data.get("seen_count"), 1) or 1
     ssid = device_data.get("ssid") or ""
     timestamp = parse_timestamp(device_data.get("timestamp") or default_timestamp)
+
+    return {
+        "mac": mac,
+        "rssi": rssi,
+        "channel": channel,
+        "frequency": frequency,
+        "frame_type": frame_type,
+        "seen_count": seen_count,
+        "ssid": ssid,
+        "timestamp": timestamp,
+    }
+
+
+def deduplicate_device_records(records: list[dict]) -> list[dict]:
+    deduplicated: dict[str, dict] = {}
+
+    for record in records:
+        mac = record["mac"]
+        existing = deduplicated.get(mac)
+
+        if not existing:
+            deduplicated[mac] = record
+            continue
+
+        existing["seen_count"] = (existing.get("seen_count") or 0) + (
+            record.get("seen_count") or 0
+        )
+
+        if record["timestamp"] >= existing["timestamp"]:
+            existing["timestamp"] = record["timestamp"]
+            for field in ("channel", "frequency", "frame_type"):
+                if record.get(field) is not None:
+                    existing[field] = record[field]
+            if record.get("ssid"):
+                existing["ssid"] = record["ssid"]
+
+        if record["rssi"] is not None and (
+            existing.get("rssi") is None or record["rssi"] > existing["rssi"]
+        ):
+            existing["rssi"] = record["rssi"]
+            for field in ("channel", "frequency", "frame_type"):
+                if record.get(field) is not None:
+                    existing[field] = record[field]
+
+    return list(deduplicated.values())
+
+
+def upsert_device_record(session: SessionLocal, record: dict) -> None:
+    mac = record["mac"]
+    rssi = record["rssi"]
+    channel = record["channel"]
+    frequency = record["frequency"]
+    frame_type = record["frame_type"]
+    seen_count = record["seen_count"]
+    ssid = record["ssid"]
+    timestamp = record["timestamp"]
 
     # Get or create device
     db_device = session.query(Device).filter(Device.mac_address == mac).first()
@@ -141,18 +214,32 @@ def process_device(session: SessionLocal, device_data: dict, default_timestamp: 
     analysis.confidence = analysis_results.get("confidence")
     analysis.last_updated = timestamp
 
-    # Create detection log
-    detection = Detection(
-        device_mac=mac,
-        timestamp=timestamp,
-        rssi=rssi or -80,
-        frequency=frequency,
-        channel=channel,
-        frame_type=frame_type,
-        seen_count=seen_count,
-        location=analysis_results.get("location")
-    )
-    session.add(detection)
+    # Keep one detection per MAC/timestamp. This prevents duplicated MQTT deliveries
+    # from appending the same capture repeatedly while preserving real history.
+    detection = session.query(Detection).filter(
+        Detection.device_mac == mac,
+        Detection.timestamp == timestamp,
+    ).first()
+
+    if not detection:
+        detection = Detection(device_mac=mac, timestamp=timestamp)
+        session.add(detection)
+
+    detection.rssi = rssi or -80
+    detection.frequency = frequency
+    detection.channel = channel
+    detection.frame_type = frame_type
+    detection.seen_count = seen_count
+    detection.location = analysis_results.get("location")
+
+
+def process_device(session: SessionLocal, device_data: dict, default_timestamp: datetime) -> bool:
+    record = build_device_record(device_data, default_timestamp)
+    if not record:
+        return False
+
+    upsert_device_record(session, record)
+    return True
 
 
 def process_payload(payload: dict) -> None:
@@ -166,12 +253,29 @@ def process_payload(payload: dict) -> None:
         logger.warning("No devices found in payload")
         return
 
+    records = []
+    skipped_count = 0
+    for device_data in devices:
+        record = build_device_record(device_data, timestamp)
+        if record:
+            records.append(record)
+        else:
+            skipped_count += 1
+
+    records = deduplicate_device_records(records)
+    if not records:
+        logger.warning("No valid devices found in payload")
+        return
+
     session = SessionLocal()
     try:
-        for device_data in devices:
-            process_device(session, device_data, timestamp)
+        for record in records:
+            upsert_device_record(session, record)
         session.commit()
-        logger.info(f"Processed {len(devices)} device records")
+        logger.info(
+            f"Upserted {len(records)} unique device records "
+            f"({skipped_count} invalid/ignored, {len(devices)} received)"
+        )
     except Exception as error:
         session.rollback()
         logger.error(f"Failed to save device records: {error}")
