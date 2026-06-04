@@ -7,8 +7,10 @@ import { formatFrequencyHz } from '../utils/formatters'
 interface Props {
   devices: Device[]
   loading: boolean
-  onSelectDevice: (d: Device) => void
+  onSelectDevice?: (d: Device) => void
   selectedDeviceMac?: string | undefined
+  emptyMessage?: string
+  compact?: boolean
 }
 
 const frameLabels: Record<string, string> = {
@@ -20,7 +22,7 @@ const frameLabels: Record<string, string> = {
 
 const formatFrameType = (frameType?: string) => frameLabels[frameType ?? ''] ?? (frameType || '-')
 
-function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Props) {
+function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac, emptyMessage, compact = false }: Props) {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -59,7 +61,7 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
   if (devices.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-        <p>Nenhum MAC capturado. Verifique se o firmware de captura do ESP32 está em execução.</p>
+        <p>{emptyMessage ?? 'Nenhum MAC capturado. Verifique se o firmware de captura do ESP32 esta em execucao.'}</p>
       </div>
     )
   }
@@ -74,9 +76,9 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Frame</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">RSSI (dBm)</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Canal</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Frequência (Hz)</th>
+              {!compact && <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Frequência (Hz)</th>}
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Visto</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Distância est.</th>
+              {!compact && <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Distância est.</th>}
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Visto por último</th>
             </tr>
           </thead>
@@ -84,10 +86,11 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
             {paginatedDevices.map(device => (
               <tr
                 key={device.mac_address}
-                onClick={() => onSelectDevice(device)}
+                onClick={() => onSelectDevice?.(device)}
                 className={clsx(
-                  'cursor-pointer transition-colors',
-                  selectedDeviceMac === device.mac_address ? 'bg-primary-50' : 'hover:bg-gray-50'
+                  'transition-colors',
+                  onSelectDevice && 'cursor-pointer',
+                  selectedDeviceMac === device.mac_address ? 'bg-primary-50' : onSelectDevice && 'hover:bg-gray-50'
                 )}
               >
                 <td className="px-6 py-4 text-sm font-mono font-medium">{device.mac_address}</td>
@@ -100,9 +103,9 @@ function DeviceList({ devices, loading, onSelectDevice, selectedDeviceMac }: Pro
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm">{device.channel ?? '-'}</td>
-                <td className="px-6 py-4 text-sm">{formatFrequencyHz(device.frequency)}</td>
+                {!compact && <td className="px-6 py-4 text-sm">{formatFrequencyHz(device.frequency)}</td>}
                 <td className="px-6 py-4 text-sm">{device.seen_count ?? 1}</td>
-                <td className="px-6 py-4 text-sm">{device.distance_estimated != null ? `${device.distance_estimated.toFixed(2)}m` : '-'}</td>
+                {!compact && <td className="px-6 py-4 text-sm">{device.distance_estimated != null ? `${device.distance_estimated.toFixed(2)}m` : '-'}</td>}
                 <td className="px-6 py-4 text-sm text-gray-600">{device.last_seen ? new Date(device.last_seen).toLocaleTimeString() : '-'}</td>
               </tr>
             ))}

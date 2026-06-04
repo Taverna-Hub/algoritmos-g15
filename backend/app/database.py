@@ -21,6 +21,8 @@ OPTIONAL_CAPTURE_COLUMNS = {
         "channel": "INTEGER",
         "frame_type": "VARCHAR(32)",
         "seen_count": "INTEGER",
+        "is_current_batch": "BOOLEAN NOT NULL DEFAULT FALSE",
+        "last_batch_id": "VARCHAR(64)",
     },
     "detections": {
         "channel": "INTEGER",

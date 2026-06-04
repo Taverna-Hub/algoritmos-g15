@@ -52,6 +52,8 @@ class DeviceBase(BaseModel):
     frame_type: Optional[str] = None
     seen_count: Optional[int] = None
     ssid: Optional[str] = None
+    is_current_batch: bool = False
+    last_batch_id: Optional[str] = None
     so_identified: Optional[str] = None
     distance_estimated: Optional[float] = None
 
@@ -67,6 +69,8 @@ class DeviceUpdate(BaseModel):
     frame_type: Optional[str] = None
     seen_count: Optional[int] = None
     ssid: Optional[str] = None
+    is_current_batch: Optional[bool] = None
+    last_batch_id: Optional[str] = None
     so_identified: Optional[str] = None
     distance_estimated: Optional[float] = None
     last_seen: Optional[datetime] = None

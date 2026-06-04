@@ -28,6 +28,8 @@ export interface Device {
   frame_type?: string
   seen_count?: number
   ssid?: string
+  is_current_batch?: boolean
+  last_batch_id?: string
   so_identified?: string
   distance_estimated?: number
   detections?: Detection[]

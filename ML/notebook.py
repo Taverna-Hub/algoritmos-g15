@@ -174,7 +174,7 @@ def deduplicate_device_records(records: list[dict]) -> list[dict]:
     return list(deduplicated.values())
 
 
-def upsert_device_record(session: SessionLocal, record: dict) -> None:
+def upsert_device_record(session: SessionLocal, record: dict, batch_id: str | None = None) -> None:
     mac = record["mac"]
     rssi = record["rssi"]
     channel = record["channel"]
@@ -198,6 +198,9 @@ def upsert_device_record(session: SessionLocal, record: dict) -> None:
     if ssid:
         db_device.ssid = ssid
     db_device.last_seen = timestamp
+    if batch_id:
+        db_device.is_current_batch = True
+        db_device.last_batch_id = batch_id
 
     analysis_results = MLService.analyze_device(mac, rssi or -70, frequency)
     db_device.so_identified = analysis_results["so_identified"]
@@ -269,12 +272,17 @@ def process_payload(payload: dict) -> None:
 
     session = SessionLocal()
     try:
+        batch_id = timestamp.isoformat()
+        session.query(Device).update(
+            {Device.is_current_batch: False},
+            synchronize_session=False,
+        )
         for record in records:
-            upsert_device_record(session, record)
+            upsert_device_record(session, record, batch_id)
         session.commit()
         logger.info(
             f"Upserted {len(records)} unique device records "
-            f"({skipped_count} invalid/ignored, {len(devices)} received)"
+            f"({skipped_count} invalid/ignored, {len(devices)} received, batch {batch_id})"
         )
     except Exception as error:
         session.rollback()

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -19,6 +19,8 @@ class Device(Base):
     frame_type = Column(String(32), nullable=True)
     seen_count = Column(Integer, nullable=True, default=1)
     ssid = Column(String(32), nullable=True)
+    is_current_batch = Column(Boolean, default=False, nullable=False, index=True)
+    last_batch_id = Column(String(64), nullable=True, index=True)
     so_identified = Column(String(50), nullable=True)
     distance_estimated = Column(Float, nullable=True)
     

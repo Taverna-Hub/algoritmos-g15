@@ -59,11 +59,13 @@ def get_statistics(
     
     # Devices inside (RSSI > -70)
     devices_inside = db.query(func.count(Device.id)).filter(
+        Device.is_current_batch == True,
         Device.rssi > -70
     ).scalar()
     
     # Devices outside (RSSI <= -70)
     devices_outside = db.query(func.count(Device.id)).filter(
+        Device.is_current_batch == True,
         Device.rssi <= -70
     ).scalar()
     

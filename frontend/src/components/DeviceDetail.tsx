@@ -34,6 +34,9 @@ function DeviceDetail({ device, onClose }: Props) {
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Endereço MAC</p>
           <p className="text-sm font-mono mt-1 bg-gray-100 px-3 py-2 rounded">{device.mac_address}</p>
+          <span className={device.is_current_batch ? 'mt-2 inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700' : 'mt-2 inline-block rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600'}>
+            {device.is_current_batch ? 'Detectado agora' : 'Armazenado'}
+          </span>
         </div>
 
         <div>

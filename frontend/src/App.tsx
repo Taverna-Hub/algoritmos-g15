@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Dashboard from './pages/Dashboard'
+import History from './pages/History'
 import './App.css'
 
 function App(): JSX.Element {
@@ -50,11 +51,7 @@ function App(): JSX.Element {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {currentPage === 'dashboard' && <Dashboard />}
-        {currentPage === 'history' && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Página de histórico em breve...</p>
-          </div>
-        )}
+        {currentPage === 'history' && <History />}
       </main>
 
       <footer className="bg-white border-t border-gray-200 mt-12">

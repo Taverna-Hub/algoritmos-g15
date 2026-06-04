@@ -8,17 +8,20 @@ interface FiltersProps {
     location: string
     minRssi: number
     maxRssi: number
+    showStored: boolean
   }
   setFilters: (f: any) => void
   osOptions: string[]
+  showStoredToggle?: boolean
 }
 
-function Filters({ filters, setFilters, osOptions }: FiltersProps) {
+function Filters({ filters, setFilters, osOptions, showStoredToggle = true }: FiltersProps) {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setFilters((prev: any) => ({ ...prev, search: e.target.value }))
   const handleOsChange = (e: React.ChangeEvent<HTMLSelectElement>) => setFilters((prev: any) => ({ ...prev, os: e.target.value }))
   const handleLocationChange = (location: string) => setFilters((prev: any) => ({ ...prev, location: prev.location === location ? '' : location }))
   const handleRssiChange = (type: 'minRssi' | 'maxRssi', value: number) => setFilters((prev: any) => ({ ...prev, [type]: value }))
-  const handleReset = () => setFilters({ search: '', os: '', location: '', minRssi: -100, maxRssi: -30 })
+  const handleShowStoredChange = (e: React.ChangeEvent<HTMLInputElement>) => setFilters((prev: any) => ({ ...prev, showStored: e.target.checked }))
+  const handleReset = () => setFilters({ search: '', os: '', location: '', minRssi: -100, maxRssi: -30, showStored: false })
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -36,6 +39,18 @@ function Filters({ filters, setFilters, osOptions }: FiltersProps) {
             <input type="text" value={filters.search} onChange={handleSearchChange} placeholder="ex.: AA:BB:CC:DD:EE:FF" className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
         </div>
+
+        {showStoredToggle && (
+          <label className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              checked={filters.showStored}
+              onChange={handleShowStoredChange}
+              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            <span>Mostrar todos os enderecos armazenados</span>
+          </label>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Marca/empresa</label>

@@ -17,6 +17,7 @@ function Dashboard(): JSX.Element {
     location: '',
     minRssi: -100,
     maxRssi: -30,
+    showStored: false,
   })
 
   const { devices, loading, error } = useDevices()
@@ -45,8 +46,12 @@ function Dashboard(): JSX.Element {
     return [...new Set(devices.map(d => d.so_identified).filter(Boolean))] as string[]
   }, [devices])
 
+  const currentBatchDevices = useMemo(() => {
+    return filteredDevices.filter(device => device.is_current_batch)
+  }, [filteredDevices])
+
   const manufacturerChartData = useMemo(() => {
-    const counts = filteredDevices.reduce<Record<string, number>>((acc, device) => {
+    const counts = currentBatchDevices.reduce<Record<string, number>>((acc, device) => {
       const manufacturer = device.so_identified || 'Desconhecido'
       acc[manufacturer] = (acc[manufacturer] ?? 0) + 1
       return acc
@@ -55,16 +60,29 @@ function Dashboard(): JSX.Element {
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .sort((left, right) => right.value - left.value)
-  }, [filteredDevices])
+  }, [currentBatchDevices])
+
+  const currentStrongDevices = useMemo(() => {
+    return currentBatchDevices.filter(device => (device.rssi ?? -100) > -70)
+  }, [currentBatchDevices])
 
   const peopleInRoom = useMemo(() => {
-    return filteredDevices.filter(device => (device.rssi ?? -100) > -70).length
-  }, [filteredDevices])
+    return currentStrongDevices.length
+  }, [currentStrongDevices])
 
   const mostCommonManufacturer = useMemo(() => {
-    const knownManufacturers = manufacturerChartData.filter(item => item.name !== 'Desconhecido')
-    return knownManufacturers[0]?.name ?? 'Desconhecida'
-  }, [manufacturerChartData])
+    const counts = currentStrongDevices.reduce<Record<string, number>>((acc, device) => {
+      const manufacturer = device.so_identified || 'Desconhecido'
+      acc[manufacturer] = (acc[manufacturer] ?? 0) + 1
+      return acc
+    }, {})
+
+    const knownManufacturers = Object.entries(counts)
+      .filter(([name]) => name !== 'Desconhecido')
+      .sort((left, right) => right[1] - left[1])
+
+    return knownManufacturers[0]?.[0] ?? 'Desconhecida'
+  }, [currentStrongDevices])
 
   return (
     <div className="space-y-6">
@@ -78,21 +96,21 @@ function Dashboard(): JSX.Element {
         <DashboardKpiCard
           title="Pessoas na sala"
           value={peopleInRoom}
-          description="Dispositivos filtrados com sinal forte"
+          description="Sinal forte no ultimo batch"
           icon={<MapPin className="w-6 h-6" />}
           tone="green"
         />
         <DashboardKpiCard
           title="Marca mais comum"
           value={mostCommonManufacturer}
-          description="Fabricante mais frequente na selecao"
+          description="Sinal forte no ultimo batch"
           icon={<Tags className="w-6 h-6" />}
           tone="orange"
         />
         <DashboardKpiCard
-          title="Dispositivos detectados"
-          value={filteredDevices.length}
-          description="MACs visiveis apos os filtros"
+          title="Detectados agora"
+          value={currentBatchDevices.length}
+          description="MACs do ultimo batch apos filtros"
           icon={<Smartphone className="w-6 h-6" />}
           tone="blue"
         />
@@ -100,16 +118,22 @@ function Dashboard(): JSX.Element {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
-          <DistanceHeatmap devices={filteredDevices} />
+          <DistanceHeatmap devices={currentBatchDevices} />
         </div>
         <ManufacturerDonutChart data={manufacturerChartData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Filters filters={filters} setFilters={setFilters} osOptions={osOptions} />
+          <Filters filters={filters} setFilters={setFilters} osOptions={osOptions} showStoredToggle={false} />
 
-          <DeviceList devices={filteredDevices} loading={loading} onSelectDevice={setSelectedDevice} selectedDeviceMac={selectedDevice?.mac_address} />
+          <DeviceList
+            devices={currentBatchDevices}
+            loading={loading}
+            onSelectDevice={setSelectedDevice}
+            selectedDeviceMac={selectedDevice?.mac_address}
+            emptyMessage="Nenhum MAC identificado no ultimo batch."
+          />
         </div>
 
         <div className="self-start">
