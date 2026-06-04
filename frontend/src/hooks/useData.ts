@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react'
-import { deviceService, historyService } from '../services/api'
-import { getMockDetections, getMockDevice, mockDevices, mockStatistics, mockTimeline } from '../mockData'
-import type { Device, Detection, Statistics } from '../types'
+import { deviceService, historyService, sensorService } from '../services/api'
+import {
+  getMockDetections,
+  getMockDevice,
+  mockDevices,
+  mockOpticSensorCounter,
+  mockStatistics,
+  mockTimeline,
+} from '../mockData'
+import type { Device, Detection, SensorCounter, Statistics } from '../types'
 
 export const useDevices = (refreshInterval = 60000) => {
   const [devices, setDevices] = useState<Device[]>([])
@@ -121,4 +128,35 @@ export const useTimeline = (startDate?: string, endDate?: string, interval = 'ho
   }, [startDate, endDate, interval])
 
   return { timeline, loading, error, refetch: fetchTimeline }
+}
+
+export const useOpticSensorCounter = (refreshInterval = 5000) => {
+  const [counter, setCounter] = useState<SensorCounter>(mockOpticSensorCounter)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchCounter = async (showLoading = false) => {
+    try {
+      if (showLoading) {
+        setLoading(true)
+      }
+      const response = await sensorService.getOpticSensorCounter()
+      setCounter(response.data)
+      setError(null)
+    } catch (err: any) {
+      console.error('Error fetching optic sensor counter:', err)
+      setCounter(mockOpticSensorCounter)
+      setError(err.message || String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCounter(true)
+    const interval = setInterval(() => fetchCounter(false), refreshInterval)
+    return () => clearInterval(interval)
+  }, [refreshInterval])
+
+  return { counter, loading, error, refetch: () => fetchCounter(true) }
 }

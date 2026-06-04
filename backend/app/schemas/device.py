@@ -97,3 +97,12 @@ class StatisticsSchema(BaseModel):
     devices_inside: int
     devices_outside: int
     os_distribution: dict[str, int] = {}
+
+
+class SensorCounterSchema(BaseModel):
+    sensor_id: str
+    people_count: int
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

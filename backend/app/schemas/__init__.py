@@ -8,6 +8,7 @@ from app.schemas.device import (
     AnalysisSchema,
     AnalysisCreate,
     StatisticsSchema,
+    SensorCounterSchema,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "AnalysisSchema",
     "AnalysisCreate",
     "StatisticsSchema",
+    "SensorCounterSchema",
 ]

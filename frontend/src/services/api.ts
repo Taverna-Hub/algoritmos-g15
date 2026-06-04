@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Device, Detection, Statistics } from '../types'
+import type { Device, Detection, SensorCounter, Statistics } from '../types'
 
 const API_BASE_URL = '/api'
 
@@ -30,6 +30,10 @@ export const historyService = {
     api.get<Statistics>('/history/stats', { params: { start_date: startDate, end_date: endDate } }),
   getTimeline: (startDate?: string, endDate?: string, interval = 'hour') =>
     api.get<Record<string, number>>('/history/timeline', { params: { start_date: startDate, end_date: endDate, interval } }),
+}
+
+export const sensorService = {
+  getOpticSensorCounter: () => api.get<SensorCounter>('/sensors/optic/sensor-2'),
 }
 
 export const systemService = {

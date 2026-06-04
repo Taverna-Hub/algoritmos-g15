@@ -1,4 +1,4 @@
-import type { Detection, Device, Statistics } from './types'
+import type { Detection, Device, SensorCounter, Statistics } from './types'
 
 const now = Date.now()
 
@@ -101,6 +101,12 @@ export const mockTimeline: Record<string, number> = {
   [new Date(now - 1000 * 60 * 30).toISOString()]: 14,
   [new Date(now - 1000 * 60 * 15).toISOString()]: 21,
   [new Date(now).toISOString()]: 32,
+}
+
+export const mockOpticSensorCounter: SensorCounter = {
+  sensor_id: 'sensor-2',
+  people_count: 0,
+  updated_at: new Date(now).toISOString(),
 }
 
 export const getMockDevice = (mac: string) =>

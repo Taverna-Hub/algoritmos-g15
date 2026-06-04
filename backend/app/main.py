@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import engine, Base, ensure_optional_capture_columns
-from app.routes import devices_router, history_router
+from app.routes import devices_router, history_router, sensors_router
 
 # Setup logging
 logging.basicConfig(
@@ -58,6 +58,7 @@ app.add_middleware(
 # Include routers
 app.include_router(devices_router)
 app.include_router(history_router)
+app.include_router(sensors_router)
 
 
 @app.get("/")

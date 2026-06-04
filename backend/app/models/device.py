@@ -62,3 +62,14 @@ class Analysis(Base):
     
     # Relationships
     device = relationship("Device", back_populates="analysis")
+
+
+class SensorCounter(Base):
+    """Counter model for physical people-counting sensors."""
+
+    __tablename__ = "sensor_counters"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sensor_id = Column(String(64), unique=True, nullable=False, index=True)
+    people_count = Column(Integer, nullable=False, default=0)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)

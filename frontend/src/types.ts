@@ -44,3 +44,9 @@ export interface Statistics {
   devices_outside: number
   os_distribution: Record<string, number>
 }
+
+export interface SensorCounter {
+  sensor_id: string
+  people_count: number
+  updated_at?: string | null
+}

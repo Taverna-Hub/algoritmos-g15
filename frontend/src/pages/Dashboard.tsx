@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react'
-import { useDevices } from '../hooks/useData'
+import { useDevices, useOpticSensorCounter } from '../hooks/useData'
 import DashboardKpiCard from '../components/DashboardKpiCard'
 import DeviceList from '../components/DeviceList'
 import DeviceDetail from '../components/DeviceDetail'
 import Filters from '../components/Filters'
 import DistanceHeatmap from '../components/DistanceHeatmap'
 import ManufacturerDonutChart from '../components/ManufacturerDonutChart'
-import { MapPin, Smartphone, Tags } from 'lucide-react'
+import { MapPin, Smartphone, Tags, Users } from 'lucide-react'
 import type { Device } from '../types'
 
 function Dashboard(): JSX.Element {
@@ -21,6 +21,7 @@ function Dashboard(): JSX.Element {
   })
 
   const { devices, loading, error } = useDevices()
+  const { counter: opticSensorCounter } = useOpticSensorCounter()
 
   const filteredDevices = useMemo(() => {
     return devices.filter(device => {
@@ -92,13 +93,20 @@ function Dashboard(): JSX.Element {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <DashboardKpiCard
-          title="Pessoas na sala"
+          title="Pessoas por WiFi"
           value={peopleInRoom}
           description="Sinal forte no ultimo batch"
           icon={<MapPin className="w-6 h-6" />}
           tone="green"
+        />
+        <DashboardKpiCard
+          title="Sensor optico 2"
+          value={opticSensorCounter.people_count}
+          description="Contagem fisica via MQTT"
+          icon={<Users className="w-6 h-6" />}
+          tone="blue"
         />
         <DashboardKpiCard
           title="Marca mais comum"
