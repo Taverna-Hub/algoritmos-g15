@@ -2,11 +2,11 @@
 #pragma once
 
 // WiFi credentials
-#define WIFI_SSID "uaifai-tiradentes"
+#define WIFI_SSID "uaifai-brum"
 #define WIFI_PASS "bemvindoaocesar"
 
 // MQTT broker. Use your computer's LAN IP, not localhost.
-#define MQTT_BROKER_IP "172.26.67.34"
+#define MQTT_BROKER_IP "172.26.117.196"
 #define MQTT_BROKER_PORT 1883
 #define MQTT_TOPIC "esp32/wifi/scan"
 
@@ -20,7 +20,7 @@
 #define WIFI_CHANNEL_MIN 1
 #define WIFI_CHANNEL_MAX 13
 #define MAX_CAPTURED_DEVICES 64
-#define PROBE_QUEUE_LENGTH 128
+#define PROBE_RING_BUFFER_CAPACITY 128
 #define SERIAL_PRINT_CAPTURED_MACS 1
 
 // Network timeouts

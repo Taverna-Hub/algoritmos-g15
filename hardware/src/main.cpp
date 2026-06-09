@@ -8,7 +8,6 @@
 #include <esp_wifi.h>
 #include <esp_wifi_types.h>
 #include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
 #include <string.h>
 
 struct ProbeEvent {
@@ -27,13 +26,65 @@ struct ObservedDevice {
   uint16_t seenCount;
 };
 
+template <typename T, size_t Capacity>
+class RingBuffer {
+ public:
+  bool push(const T &item) {
+    if (count == Capacity) {
+      tail = (tail + 1) % Capacity;
+      count--;
+      droppedCount++;
+    }
+
+    buffer[head] = item;
+    head = (head + 1) % Capacity;
+    count++;
+    return true;
+  }
+
+  bool pop(T &item) {
+    if (count == 0) {
+      return false;
+    }
+
+    item = buffer[tail];
+    tail = (tail + 1) % Capacity;
+    count--;
+    return true;
+  }
+
+  void clear() {
+    head = 0;
+    tail = 0;
+    count = 0;
+    droppedCount = 0;
+  }
+
+  size_t size() const {
+    return count;
+  }
+
+  size_t dropped() const {
+    return droppedCount;
+  }
+
+ private:
+  T buffer[Capacity];
+  size_t head = 0;
+  size_t tail = 0;
+  size_t count = 0;
+  size_t droppedCount = 0;
+};
+
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
-static QueueHandle_t probeQueue = nullptr;
+static RingBuffer<ProbeEvent, PROBE_RING_BUFFER_CAPACITY> probeRingBuffer;
+static portMUX_TYPE probeRingMux = portMUX_INITIALIZER_UNLOCKED;
 static ObservedDevice observedDevices[MAX_CAPTURED_DEVICES];
 static char mqttPayload[MQTT_BUFFER_SIZE];
 static unsigned long lastCaptureMillis = 0;
+static unsigned long publishSequence = 0;
 
 int computeFrequencyFromChannel(uint8_t channel);
 void wifiPromiscuousRx(void *buf, wifi_promiscuous_pkt_type_t type);
@@ -75,6 +126,12 @@ bool isIgnoredMac(const uint8_t mac[6]) {
 
 void resetObservedDevices() {
   memset(observedDevices, 0, sizeof(observedDevices));
+}
+
+void resetProbeRingBuffer() {
+  portENTER_CRITICAL(&probeRingMux);
+  probeRingBuffer.clear();
+  portEXIT_CRITICAL(&probeRingMux);
 }
 
 void formatMac(const uint8_t mac[6], char *buffer, size_t bufferSize) {
@@ -122,12 +179,16 @@ void aggregateProbeEvent(const ProbeEvent &event) {
 }
 
 void drainProbeQueue() {
-  if (!probeQueue) {
-    return;
-  }
-
   ProbeEvent event;
-  while (xQueueReceive(probeQueue, &event, 0) == pdTRUE) {
+  for (;;) {
+    portENTER_CRITICAL(&probeRingMux);
+    const bool hasEvent = probeRingBuffer.pop(event);
+    portEXIT_CRITICAL(&probeRingMux);
+
+    if (!hasEvent) {
+      break;
+    }
+
     aggregateProbeEvent(event);
   }
 }
@@ -213,7 +274,7 @@ void runCaptureWindow() {
 #endif
 
   resetObservedDevices();
-  drainProbeQueue();
+  resetProbeRingBuffer();
   disconnectNetworkForCapture();
   startPromiscuousCapture();
 
@@ -296,6 +357,8 @@ bool publishCaptureResults() {
 
   DynamicJsonDocument doc(MQTT_JSON_DOCUMENT_SIZE);
   doc["device_id"] = DEVICE_ID;
+  doc["algorithm"] = "eficiente";
+  doc["sequence"] = ++publishSequence;
 
   JsonArray packets = doc.createNestedArray("packets");
   for (int i = 0; i < MAX_CAPTURED_DEVICES; ++i) {
@@ -374,19 +437,16 @@ void wifiPromiscuousRx(void *buf, wifi_promiscuous_pkt_type_t type) {
   event.channel = rxCtrl.channel;
   event.frameType = subtype == 4 ? 0 : (subtype == 5 ? 1 : 2);
 
-  if (probeQueue) {
-    xQueueSendFromISR(probeQueue, &event, nullptr);
-  }
+  portENTER_CRITICAL_ISR(&probeRingMux);
+  probeRingBuffer.push(event);
+  portEXIT_CRITICAL_ISR(&probeRingMux);
 }
 
 void setup() {
   Serial.begin(115200);
   delay(500);
 
-  probeQueue = xQueueCreate(PROBE_QUEUE_LENGTH, sizeof(ProbeEvent));
-  if (!probeQueue) {
-    Serial.println("Failed to create probe event queue");
-  }
+  resetProbeRingBuffer();
 
   mqttClient.setServer(MQTT_BROKER_IP, MQTT_BROKER_PORT);
   mqttClient.setBufferSize(MQTT_BUFFER_SIZE);

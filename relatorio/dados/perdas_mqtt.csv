@@ -1,0 +1,6 @@
+latencia_rede_ms,perdas_ineficiente,perdas_circular
+0,0,0
+200,240,0
+500,600,100
+1000,1200,700
+2000,2400,1900
