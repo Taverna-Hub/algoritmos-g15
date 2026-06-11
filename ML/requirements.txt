@@ -1,8 +1,0 @@
-numpy
-pandas
-scikit-learn
-paho-mqtt
-pydantic-settings
-sqlalchemy
-psycopg2-binary
-python-dotenv
